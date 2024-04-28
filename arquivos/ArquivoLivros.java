@@ -1,5 +1,8 @@
 package arquivos;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 
 import aeds3.Arquivo;
@@ -34,7 +37,9 @@ public class ArquivoLivros extends Arquivo<Livro> {
     indiceIndiretoISBN.create(new ParIsbnId(obj.getIsbn(), obj.getID()));
     relLivrosDaCategoria.create(new ParIntInt(obj.getIdCategoria(), obj.getID()));
     
-    String [] palavrasChave = obj.getTitulo().toLowerCase().split(" "); // divide o titulo em palavras
+    String [] palavrasChaveSW = obj.getTitulo().toLowerCase().split(" "); // divide o titulo em palavras
+    String [] palavrasChave = retirarSW(palavrasChaveSW);
+
     for(int i = 0; i < palavrasChave.length; i++)
     {
       indiceInvertido.create(palavrasChave[i], id); // insere todas as palavras no indice
@@ -52,7 +57,12 @@ public class ArquivoLivros extends Arquivo<Livro> {
   }
 
   public Livro [] readTitulo(String titulo) throws Exception{ // metodo para buscar livros por titulos
-    String [] palavrasChave = titulo.toLowerCase().split(" "); // divide o titulo em palavras
+    String [] palavrasChaveSW = titulo.toLowerCase().split(" "); // divide o titulo em palavras
+    String [] palavrasChave = retirarSW(palavrasChaveSW);
+    if(palavrasChave.length == 0)
+    {
+      return null;
+    }
     int [] dados = indiceInvertido.read(palavrasChave[0]); // faz um array com os indices referentes a primeira palavra buscada
 
     if(palavrasChave.length > 1) // se tiver mais de uma palavra
@@ -83,7 +93,8 @@ public class ArquivoLivros extends Arquivo<Livro> {
           &&
           relLivrosDaCategoria.delete(new ParIntInt(obj.getIdCategoria(), obj.getID()))) //se conseguir apagar do indice e da categoria
         {
-          String [] palavrasChave = obj.getTitulo().toLowerCase().split(" "); // divide o titulo em palavras 
+          String [] palavrasChaveSW = obj.getTitulo().toLowerCase().split(" "); // divide o titulo em palavras
+          String [] palavrasChave = retirarSW(palavrasChaveSW); 
           for(int i = 0; i < palavrasChave.length; i++)
           {
             indiceInvertido.delete(palavrasChave[i], id); // deleta todos os indices referentes a palavra do indice invertido
@@ -115,13 +126,15 @@ public class ArquivoLivros extends Arquivo<Livro> {
 
       // Testa a alteração do título
       if(livroAntigo.getTitulo() != novoLivro.getTitulo()) {
-        String [] palavrasChave = livroAntigo.getTitulo().toLowerCase().split(" "); //divide o titulo antigo em palavras
+        String [] palavrasChaveSW = livroAntigo.getTitulo().toLowerCase().split(" "); //divide o titulo antigo em palavras
+        String [] palavrasChave = retirarSW(palavrasChaveSW);
         for(int i = 0; i < palavrasChave.length; i++)
         {
           indiceInvertido.delete(palavrasChave[i], livroAntigo.getID()); //apaga os indices destas palavras no indice invertido
         }
 
-        String [] palavrasChave2 = novoLivro.getTitulo().toLowerCase().split(" "); // divide o novo titulo em palavras
+        String [] palavrasChaveSW2 = novoLivro.getTitulo().toLowerCase().split(" "); // divide o novo titulo em palavras
+        String [] palavrasChave2 = retirarSW(palavrasChaveSW2);
         for(int i = 0; i < palavrasChave2.length; i++)
         {
           indiceInvertido.create(palavrasChave2[i], novoLivro.getID()); // cria os indices destas palavras no indice invertido 
@@ -160,9 +173,63 @@ public class ArquivoLivros extends Arquivo<Livro> {
   }
 
 
+  public String [] retirarSW(String [] palavrasChaveSW) throws Exception{
 
+    ArrayList<String> stopWords = new ArrayList<>(); //inicio um arraylist para stopwords
+    ArrayList<String> palavrasChave = new ArrayList<>(); //inicio um arraylist para as palavras chave (titulo)
 
+    //criando um arraylist das stopWords
+    BufferedReader buffRead = new BufferedReader(new FileReader("dados/stopwords.txt")); //abre o arquivo para leitura
+    String sw = "";
+    while ((sw = buffRead.readLine()) != null) //enquanto não ler null
+    {
+      stopWords.add(sw.toLowerCase().trim()); //adiciona ao arraylist (tudo minusculo para padronizar e tirando espaços)
+    }
+    buffRead.close(); //ao terminar fecha o bufferedreader
 
+    /*
+    funcionou mas queria fazer com arraylists usando a função remove all
+    String [] teste = new String[stopWords.size()];
+    for(int i = 0; i < teste.length; i++)
+    {
+      teste[i] = (String) stopWords.get(i);
+    } 
+    */
 
+    //criando um arraylist com o titulo (ainda com stopwords)
+    for(int i = 0; i < palavrasChaveSW.length; i++)
+    {
+      palavrasChave.add(palavrasChaveSW[i]); //adiciona todas as palavras chave ao arraylist
+    }
+    
+    palavrasChave.removeAll(stopWords); //removo as stopwords das palavras chave
+    
+    /* 
+    for(int i = 0; i < palavrasChaveSW.length; i++)
+    {
+      boolean conf = true;
+      for(int j = 0; j < teste.length; j++)
+      {
+        if(palavrasChaveSW[i].equals(teste[j]))
+        {
+          conf = false;
+          break;
+        }
+      }
+      if(conf == true)
+      {
+        palavrasChave.add(palavrasChaveSW[i]);
+      }
+    }
+    */
+    
+    palavrasChave.sort(null); // organiza a lista
+    String[] resposta = new String[palavrasChave.size()]; //cria um array de Strings resposta
+    for (int j = 0; j < palavrasChave.size(); j++)
+    {
+      resposta[j] = (String) palavrasChave.get(j); //coloca em resposta os valores salvos no arraylist
+    }
+    return resposta; //retorna a resposta
+  }
 
 }

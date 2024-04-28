@@ -249,7 +249,7 @@ public class MenuLivros {
 
     try { 
       Livro [] lista = arqLivros.readTitulo(titulo); // cria a lista de livros baseada no titulo buscado
-      if (lista.length == 0) { // se a lista estiver vazia 
+      if (lista == null || lista.length == 0 ) { // se a lista estiver vazia 
         System.out.println("Nenhum livro encontrado"); // nenhum livro encontrado
         return;
       }
